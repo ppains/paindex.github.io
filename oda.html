@@ -734,7 +734,10 @@
         }
         chatBox.appendChild(div);
       });
-      chatBox.scrollTop = chatBox.scrollHeight + 1000;
+      // always scroll to newest
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }, err=>{
+      console.error('subscribe messages error', err);
     });
   }
 
@@ -761,6 +764,10 @@
       subscribeRoomMessages(roomId);
       // show leave button
       leaveRoomBtn.style.display = 'inline-flex';
+      // enable chat input & send
+      chatInput.disabled = false;
+      sendBtn.disabled = false;
+      chatInput.focus();
       // ensure sidebar closed on mobile
       if(window.innerWidth <= 768){
         sidebar.classList.remove('open');
@@ -784,6 +791,8 @@
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       chatInput.value = '';
+      // small safety: ensure chat scrolls after sending if subscription slow
+      setTimeout(()=> { chatMessages.scrollTop = chatMessages.scrollHeight; }, 200);
     }catch(e){
       console.error('sendChatMessage error', e);
       showToast('Mesaj gönderilemedi', 'error');
@@ -854,17 +863,15 @@
     });
   }
 
-  // close sidebar when a room is selected already handled in subscribeRoomList click handler
-
   // when chat input focused on mobile, scroll to bottom so input is visible
   chatInput.addEventListener('focus', ()=> {
     setTimeout(()=> { chatMessages.scrollTop = chatMessages.scrollHeight; }, 300);
   });
 
   // quick logout (clear session)
-  const logoutBtn = el('logoutBtn');
-  if(logoutBtn){
-    logoutBtn.addEventListener('click', ()=>{
+  const logoutBtnEl = el('logoutBtn');
+  if(logoutBtnEl){
+    logoutBtnEl.addEventListener('click', ()=>{
       localStorage.removeItem('oc_user');
       location.reload();
     });
@@ -879,15 +886,12 @@
     roomMeta.textContent = 'Sohbete başlamak için bir odaya katılın';
     el('chatMessages').innerHTML = '<div style="text-align:center; margin-top:40px; color:var(--text-muted);"><span class="material-icons-round" style="font-size:48px; opacity:0.5;">forum</span><p>Sol menüden bir oda seçin veya oluşturun.</p></div>';
     leaveRoomBtn.style.display = 'none';
+    // disable chat input
+    chatInput.disabled = true;
+    sendBtn.disabled = true;
   });
 
-  // initialize UI: subscribe rooms if logged in or when user logs in
-  function initTkgmUI(){
-    // wire game buttons
-    const buttons = Array.from(document.querySelectorAll('#tkgmChoices .game-btn'));
-    buttons.forEach(btn => btn.addEventListener('click', onGameChoice));
-  }
-  // init room list even if not logged (listening open to anyone)
+  // initialize UI: subscribe rooms even if not logged (listening open to anyone)
   subscribeRoomList();
   </script>
 </body>
